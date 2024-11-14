@@ -1,98 +1,128 @@
-import pandas as pd
-import numpy as np
-from sklearn.cluster import KMeans
-from dask import dataframe as dd
+import dask.dataframe as dd
+import dask_ml.cluster as dkc
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-from rich import print
+from sklearn.metrics import silhouette_score
+from dask_ml.cluster import KMeans
+import matplotlib.pyplot as plt
+import numpy as np
 from rich.console import Console
-from rich.table import Table
-from rich.progress import track
+from rich.progress import Progress
+from rich.theme import Theme
 
-class ABC:
-    def __init__(self, n_bees, n_iterations, n_clusters, data):
-        self.console = Console()
-        self.n_bees = n_bees
-        self.n_iterations = n_iterations
-        self.n_clusters = n_clusters
-        self.data = data
-        self.best_solution = None
-        self.best_fitness = float('inf')
+# Configuration
+CONFIG = {
+    'data_path': "data/raw/UNSW_NB15_training-set.csv",
+    'blocksize': '64MB',
+    'k_range': range(2, 11),
+    'numerical_columns': [
+        'dur', 'spkts', 'dpkts', 'sbytes', 'dbytes', 'rate', 'sttl', 'dttl', 
+        'sload', 'dload', 'sloss', 'dloss', 'sinpkt', 'dinpkt', 'sjit', 'djit', 
+        'swin', 'stcpb', 'dtcpb', 'dwin', 'tcprtt', 'synack', 'ackdat', 'smean', 
+        'dmean', 'trans_depth', 'response_body_len', 'ct_srv_src', 'ct_state_ttl', 
+        'ct_dst_ltm', 'ct_src_dport_ltm', 'ct_dst_sport_ltm', 'ct_dst_src_ltm', 
+        'is_ftp_login', 'ct_ftp_cmd', 'ct_flw_http_mthd', 'ct_src_ltm', 'ct_srv_dst', 
+        'is_sm_ips_ports', 'label'
+    ]
+}
 
-    def initialize_population(self):
-        return [KMeans(n_clusters=self.n_clusters, init='random').fit(self.data).cluster_centers_ for _ in range(self.n_bees)]
+def setup_rich_console():
+    """設置Rich控制台主題和實例"""
+    custom_theme = Theme({
+        "primary": "bold green",
+        "secondary": "dim white",
+        "info": "bold blue",
+        "warning": "bold yellow",
+        "error": "bold red",
+    })
+    return Console(theme=custom_theme)
 
-    def evaluate_fitness(self, centroids):
-        kmeans = KMeans(n_clusters=self.n_clusters, init=centroids, n_init=1)
-        kmeans.fit(self.data)
-        return kmeans.inertia_
+def load_and_preprocess_data(console):
+    """加載和預處理數據"""
+    console.print("[info]Loading and processing data...", style="primary")
+    
+    # 加載數據
+    ddf = dd.read_csv(CONFIG['data_path'], blocksize=CONFIG['blocksize'])
+    X = ddf[CONFIG['numerical_columns']]
+    
+    # 標準化
+    with Progress() as progress:
+        task = progress.add_task("[cyan]Scaling the data...", total=1)
+        scaler = StandardScaler()
+        X_scaled = X.map_partitions(lambda df: scaler.fit_transform(df))
+        progress.update(task, advance=1)
+        console.print("[info]Data scaling complete.", style="primary")
+    
+    X_scaled.compute_chunk_sizes()
+    return X_scaled
 
-    def optimize(self):
-        population = self.initialize_population()
-        self.console.print("[bold green]Starting optimization process...[/]")
-        
-        for iteration in track(range(self.n_iterations), description="Optimizing"):
-            for i in range(self.n_bees):
-                new_solution = self.explore(population[i])
-                new_fitness = self.evaluate_fitness(new_solution)
-                if new_fitness < self.evaluate_fitness(population[i]):
-                    population[i] = new_solution
-                    if new_fitness < self.best_fitness:
-                        self.best_fitness = new_fitness
-                        self.best_solution = new_solution
-                        self.console.print(f"[blue]New best fitness: {self.best_fitness:.2f}[/]")
-        return self.best_solution
+def compute_clustering_metrics(X, k_range):
+    """計算聚類指標"""
+    def compute_inertia():
+        inertia = []
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Computing inertia for different k...", total=len(k_range))
+            for k in k_range:
+                kmeans = KMeans(n_clusters=k)
+                kmeans.fit(X)
+                inertia.append(kmeans.inertia_)
+                progress.update(task, advance=1)
+        return inertia
 
-    def explore(self, solution):
-        perturbation = np.random.normal(0, 0.1, solution.shape)
-        return solution + perturbation
+    def compute_silhouette():
+        silhouette_scores = []
+        with Progress() as progress:
+            task = progress.add_task("[cyan]Computing silhouette score for different k...", total=len(k_range))
+            for k in k_range:
+                kmeans = KMeans(n_clusters=k)
+                kmeans.fit(X)
+                score = silhouette_score(X, kmeans.labels_)
+                silhouette_scores.append(score)
+                progress.update(task, advance=1)
+        return silhouette_scores
 
-    def write_results(self, filename):
-        with open(filename, 'w') as f:
-            for centroid in self.best_solution:
-                f.write(','.join(map(str, centroid)) + '\n')
+    return compute_inertia(), compute_silhouette()
 
-# Load data using Dask
-ddf = dd.read_csv("data/raw/iot23_combined.csv", blocksize='64MB')
-ddf = ddf[(ddf['Label'] == 'Benign') | (ddf['Label'] == 'DDoS')]
-df = ddf.compute()
+def plot_metrics(k_range, inertia, silhouette_scores):
+    """繪製指標圖表"""
+    plt.figure(figsize=(10, 5))
+    
+    # Elbow Method
+    plt.subplot(1, 2, 1)
+    plt.plot(k_range, inertia, marker='o')
+    plt.title("Elbow Method (Inertia)")
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('Inertia')
 
-# Preprocess data
-df.dropna(inplace=True)
-df.columns = df.columns.str.replace(' ', '')
-cols = df.drop(columns=['Label']).columns.tolist()
-for col in cols:
-    df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    # Silhouette Score
+    plt.subplot(1, 2, 2)
+    plt.plot(k_range, silhouette_scores, marker='o', color='orange')
+    plt.title("Silhouette Score")
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('Silhouette Score')
 
-# Standardize features
-scaler = StandardScaler()
-X = scaler.fit_transform(df.drop(columns=['Label']))
+    plt.tight_layout()
+    plt.show()
 
-# Apply ABC to optimize K-means centroids
-abc = ABC(n_bees=10, n_iterations=100, n_clusters=4, data=X)
-best_centroids = abc.optimize()
-abc.write_results('best_centroids.txt')
+def main():
+    # 初始化
+    console = setup_rich_console()
+    
+    # 數據處理
+    X_scaled = load_and_preprocess_data(console)
+    
+    # 計算聚類指標
+    inertia, silhouette_scores = compute_clustering_metrics(X_scaled, CONFIG['k_range'])
+    
+    # 繪製圖表
+    plot_metrics(CONFIG['k_range'], inertia, silhouette_scores)
+    
+    # 輸出最佳k值
+    best_k_silhouette = CONFIG['k_range'][np.argmax(silhouette_scores)]
+    best_k_inertia = CONFIG['k_range'][np.argmin(np.diff(inertia))]
+    
+    console.print(f"[info]Best k based on Silhouette Score: {best_k_silhouette}", style="primary")
+    console.print(f"[info]Best k based on Elbow Method: {best_k_inertia}", style="primary")
 
-# Perform clustering with optimized centroids
-kmeans = KMeans(n_clusters=4, init=best_centroids, n_init=1)
-kmeans.fit(X)
-
-# Output cluster labels
-df['Cluster'] = kmeans.labels_
-print(df[['Label', 'Cluster']].head())
-
-# After clustering, create a rich table to display results
-console = Console()
-table = Table(show_header=True, header_style="bold magenta")
-table.add_column("Label")
-table.add_column("Cluster")
-
-for label, cluster in df[['Label', 'Cluster']].head().values:
-    table.add_row(str(label), str(cluster))
-
-console.print("\n[bold]Clustering Results:[/]")
-console.print(table)
-
-# Add cluster distribution summary
-console.print("\n[bold]Cluster Distribution:[/]")
-cluster_dist = df.groupby(['Label', 'Cluster']).size().unstack(fill_value=0)
-print(cluster_dist)
+if __name__ == "__main__":
+    main()
