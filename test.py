@@ -7,6 +7,8 @@ from rich import print
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
+from joblib import Parallel, delayed
+import joblib
 
 class ABC:
     def __init__(self, n_bees, n_iterations, n_clusters, data):
@@ -17,12 +19,16 @@ class ABC:
         self.data = data
         self.best_solution = None
         self.best_fitness = float('inf')
+        self.n_jobs = joblib.cpu_count()
 
     def initialize_population(self):
-        return [KMeans(n_clusters=self.n_clusters, init='random').fit(self.data).cluster_centers_ for _ in range(self.n_bees)]
+        return Parallel(n_jobs=self.n_jobs)(
+            delayed(lambda: KMeans(n_clusters=self.n_clusters, init='random').fit(self.data).cluster_centers_)()
+            for _ in range(self.n_bees)
+        )
 
     def evaluate_fitness(self, centroids):
-        kmeans = KMeans(n_clusters=self.n_clusters, init=centroids, n_init=1)
+        kmeans = KMeans(n_clusters=self.n_clusters, init=centroids, n_init=1, n_jobs=-1)
         kmeans.fit(self.data)
         return kmeans.inertia_
 
@@ -31,14 +37,19 @@ class ABC:
         self.console.print("[bold green]Starting optimization process...[/]")
         
         for iteration in track(range(self.n_iterations), description="Optimizing"):
+            new_solutions = Parallel(n_jobs=self.n_jobs)(
+                delayed(self.explore)(pop) for pop in population
+            )
+            new_fitnesses = Parallel(n_jobs=self.n_jobs)(
+                delayed(self.evaluate_fitness)(sol) for sol in new_solutions
+            )
+            
             for i in range(self.n_bees):
-                new_solution = self.explore(population[i])
-                new_fitness = self.evaluate_fitness(new_solution)
-                if new_fitness < self.evaluate_fitness(population[i]):
-                    population[i] = new_solution
-                    if new_fitness < self.best_fitness:
-                        self.best_fitness = new_fitness
-                        self.best_solution = new_solution
+                if new_fitnesses[i] < self.evaluate_fitness(population[i]):
+                    population[i] = new_solutions[i]
+                    if new_fitnesses[i] < self.best_fitness:
+                        self.best_fitness = new_fitnesses[i]
+                        self.best_solution = new_solutions[i]
                         self.console.print(f"[blue]New best fitness: {self.best_fitness:.2f}[/]")
         return self.best_solution
 
@@ -73,7 +84,7 @@ best_centroids = abc.optimize()
 abc.write_results('best_centroids.txt')
 
 # Perform clustering with optimized centroids
-kmeans = KMeans(n_clusters=4, init=best_centroids, n_init=1)
+kmeans = KMeans(n_clusters=4, init=best_centroids, n_init=1, n_jobs=-1)
 kmeans.fit(X)
 
 # Output cluster labels
