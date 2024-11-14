@@ -11,6 +11,8 @@ from rich.console import Console
 from rich.progress import track
 from rich.table import Table
 import traceback
+from concurrent.futures import ThreadPoolExecutor
+from joblib import Parallel, delayed
 
 console = Console()
 
@@ -34,31 +36,43 @@ class ArtificialBeeColony:
         kmeans.fit(data)
         return silhouette_score(data, kmeans.labels_)
     
+    def calculate_fitness_parallel(self, solutions, data):
+        fitness_values = Parallel(n_jobs=-1)(
+            delayed(self.calculate_fitness)(sol, data) for sol in track(solutions, description="Calculating fitness...")
+        )
+        return fitness_values
+    
     def optimize(self, data):
         solutions = self.initialize_solutions(data)
-        fitness_values = [self.calculate_fitness(sol, data) for sol in solutions]
+        fitness_values = self.calculate_fitness_parallel(solutions, data)
         best_solution = solutions[np.argmax(fitness_values)]
         
+        with ThreadPoolExecutor() as executor:
+            for _ in track(range(self.max_iterations), description="Clustering in progress..."):
+                # 僱用蜂階段
+                futures = []
+                for i in range(self.n_bees):
+                    futures.append(executor.submit(self._explore_solution, solutions[i], data))
+                
+                for i, future in enumerate(futures):
+                    new_solution, new_fitness = future.result()
+                    if new_fitness > fitness_values[i]:
+                        solutions[i] = new_solution
+                        fitness_values[i] = new_fitness
+                
+                # 更新全局最佳解
+                best_idx = np.argmax(fitness_values)
+                if fitness_values[best_idx] > self.calculate_fitness(best_solution, data):
+                    best_solution = solutions[best_idx].copy()
         
-        for _ in track(range(self.max_iterations), description="Clustering in progress..."):
-            # 僱用蜂階段
-            for i in range(self.n_bees):
-                new_solution = solutions[i].copy()
-                # 產生新的候選解
-                param_to_mod = np.random.randint(0, self.n_clusters)
-                new_solution[param_to_mod] = data[np.random.randint(0, len(data))]
-                
-                new_fitness = self.calculate_fitness(new_solution, data)
-                if new_fitness > fitness_values[i]:
-                    solutions[i] = new_solution
-                    fitness_values[i] = new_fitness
-            
-            # 更新全局最佳解
-            best_idx = np.argmax(fitness_values)
-            if fitness_values[best_idx] > self.calculate_fitness(best_solution, data):
-                best_solution = solutions[best_idx].copy()
-                
         return best_solution
+
+    def _explore_solution(self, solution, data):
+        new_solution = solution.copy()
+        param_to_mod = np.random.randint(0, self.n_clusters)
+        new_solution[param_to_mod] = data[np.random.randint(0, len(data))]
+        new_fitness = self.calculate_fitness(new_solution, data)
+        return new_solution, new_fitness
 
 class ClusteringAnalysis:
     def __init__(self, n_clusters=3, n_bees=10, max_iterations=50):
