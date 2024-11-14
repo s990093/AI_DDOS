@@ -36,15 +36,15 @@ class ArtificialBeeColony:
         kmeans.fit(data)
         return silhouette_score(data, kmeans.labels_)
     
-    def calculate_fitness_parallel(self, solutions, data):
-        fitness_values = Parallel(n_jobs=-1)(
-            delayed(self.calculate_fitness)(sol, data) for sol in track(solutions, description="Calculating fitness...")
-        )
-        return fitness_values
+    # def calculate_fitness_parallel(self, solutions, data):
+    #     fitness_values = Parallel(n_jobs=-1)(
+    #         delayed(self.calculate_fitness)(sol, data) for sol in track(solutions, description="Calculating fitness...")
+    #     )
+    #     return fitness_values
     
     def optimize(self, data):
         solutions = self.initialize_solutions(data)
-        fitness_values = self.calculate_fitness_parallel(solutions, data)
+        fitness_values = self.calculate_fitness(solutions, data)
         best_solution = solutions[np.argmax(fitness_values)]
         
         with ThreadPoolExecutor() as executor:
