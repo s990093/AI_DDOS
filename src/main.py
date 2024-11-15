@@ -1,5 +1,5 @@
 from sklearn.decomposition import PCA
-from core.optimizer import ABCOptimizer
+from core.optimizer import PSOOptimizer
 from utils import load_and_preprocess_data
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,13 +31,10 @@ def main(cpu, iterations, population, clusters):
     # 數據處理
     X_scaled = load_and_preprocess_data(console)
     
-    optimizer = ABCOptimizer(
+    optimizer = PSOOptimizer(
         X=X_scaled,
         k=clusters,
         max_iter=iterations,
-        population_size=population,
-        limit=20,
-        patience=5,
         n_processes=cpu
     )   
 
