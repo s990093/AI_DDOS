@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn
+from rich.console import Console
+from rich.text import Text
 from ..metrics.clustering_metrics import calculate_metrics, is_better_solution
 from .particle import Particle
 from multiprocessing import Pool
@@ -90,53 +92,70 @@ class PSOOptimizer:
     def optimize(self):
         """Execute PSO optimization process."""
         no_improve_count = 0
+        console = Console()
+        
+        # 顯示初始設定資訊
+        console.print("\n[bold cyan]PSO Optimization Settings:[/bold cyan]")
+        console.print(f"Number of clusters (k): {self.k}")
+        console.print(f"Number of particles: {self.n_particles}")
+        console.print(f"Maximum iterations: {self.max_iter}")
+        console.print(f"Number of processes: {self.n_processes}")
+        console.print(f"Dataset shape: {self.X.shape}")
+        console.print("\n[bold cyan]Starting optimization...[/bold cyan]\n")
         
         # Initialize global best using multiprocessing
-        # Initialize particles in parallel with max 5 processes
+        console.print("[bold]Step 1:[/bold] Initializing particles...")
         with Pool(processes=self.n_processes) as pool:
             initialized_particles = pool.map(self._init_particle, self.particles)
         
         # Update particles and find initial global best
+        console.print("[bold]Step 2:[/bold] Finding initial global best...")
         self.particles = initialized_particles
         for particle in self.particles:
             if is_better_solution(particle.current_metrics, self.global_best_metrics):
                 self.global_best_metrics = particle.current_metrics.copy()
                 self.global_best_position = particle.position.copy()
         
-        # 使用更大的进程池
+        console.print("[bold]Step 3:[/bold] Starting main optimization loop...")
         n_processes = min(self.n_particles, self.n_processes)
         
         with Pool(processes=n_processes) as pool:
-            # 批量处理粒子更新
             chunk_size = max(self.n_particles // n_processes, 1)
             
-            with tqdm(total=self.max_iter, desc="PSO Optimization") as pbar:
+            with Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TaskProgressColumn(),
+                TimeRemainingColumn(),
+                console=console
+            ) as progress:
+                task = progress.add_task("[cyan]PSO Optimization", total=self.max_iter)
+                
                 for iteration in range(self.max_iter):
                     # Update inertia weight linearly
                     self.w = self.w_start - (self.w_start - self.w_end) * (iteration / self.max_iter)
                     
                     improved = False
-                    
-                    # 使用更大的chunk_size进行并行处理
                     updated_particles = pool.map(self._update_particle, self.particles, 
                                               chunksize=chunk_size)
                     
                     # Update particles and check for improvements
                     for particle in updated_particles:
-                        # Update personal best
                         if is_better_solution(particle.current_metrics, particle.best_metrics):
                             particle.best_position = particle.position.copy()
                             particle.best_metrics = particle.current_metrics.copy()
                             
-                            # Update global best
                             if is_better_solution(particle.current_metrics, self.global_best_metrics):
                                 self.global_best_position = particle.position.copy()
                                 self.global_best_metrics = particle.current_metrics.copy()
                                 improved = True
-                                print(
-                                    f"[green]Iteration {iteration}: improved "
-                                    f"(silhouette={self.global_best_metrics['silhouette']:.3f}, "
-                                    f"davies_bouldin={self.global_best_metrics['davies_bouldin']:.3f})"
+                                console.print(
+                                    Text(
+                                        f"Iteration {iteration}: improved "
+                                        f"(silhouette={self.global_best_metrics['silhouette']:.3f}, "
+                                        f"davies_bouldin={self.global_best_metrics['davies_bouldin']:.3f})",
+                                        style="green"
+                                    )
                                 )
                     
                     # Update particles list
@@ -147,17 +166,16 @@ class PSOOptimizer:
                         1.0 / (1.0 + self.global_best_metrics['davies_bouldin'])
                     )
                     
-                    # Update progress bar
-                    pbar.update(1)
-                    if improved:
-                        pbar.set_postfix({
-                            'silhouette': f"{self.global_best_metrics['silhouette']:.3f}",
-                            'davies_bouldin': f"{self.global_best_metrics['davies_bouldin']:.3f}"
-                        })
+                    # Update progress
+                    progress.update(
+                        task, 
+                        advance=1,
+                        description=f"[cyan]PSO Optimization - S:{self.global_best_metrics['silhouette']:.3f} DB:{self.global_best_metrics['davies_bouldin']:.3f}"
+                    )
                     
                     # Early stopping check
                     if no_improve_count >= self.patience:
-                        pbar.set_description(f"Early stopping after {no_improve_count} iterations")
+                        progress.update(task, description=f"[yellow]Early stopping after {no_improve_count} iterations")
                         break
         
         # Plot fitness history

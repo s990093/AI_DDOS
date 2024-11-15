@@ -27,14 +27,40 @@ console = setup_rich_console()
 @click.option('--iterations', '-i', default=300, help='Maximum number of iterations.')
 @click.option('--population', '-p', default=40, help='Population size.')
 @click.option('--clusters', '-k', default=5, help='Number of clusters.')
-def main(cpu, iterations, population, clusters):    
+@click.option('--pca-components', '-d', default=0, help='Number of PCA components. 0 for no reduction.')
+def main(cpu, iterations, population, clusters, pca_components):    
     # 數據處理
     X_scaled = load_and_preprocess_data(console)
     
+    if pca_components > 0:
+        # 先測試不同維度的解釋方差
+        pca = PCA(n_components=40)  # 先擬合所有維度
+        pca.fit(X_scaled)
+        
+        # 顯示累積解釋方差
+        cumulative_variance = np.cumsum(pca.explained_variance_ratio_) * 100
+        
+        console.print("\n[bold cyan]Cumulative Explained Variance:[/bold cyan]")
+        for i in [5, 10, 15, 20, 25, 30]:
+            console.print(f"{i} components: {cumulative_variance[i-1]:.2f}%")
+            
+        # 進行實際降維
+        pca = PCA(n_components=pca_components)
+        X_reduced = pca.fit_transform(X_scaled)
+        explained_variance = sum(pca.explained_variance_ratio_) * 100
+        console.print(f"\n[info]Reduced dimensions from 40 to {pca_components}")
+        console.print(f"[info]Explained variance: {explained_variance:.2f}%")
+        
+        X_final = X_reduced
+    else:
+        console.print("[info]Using original dimensions (no PCA reduction)")
+        X_final = X_scaled
+
     optimizer = PSOOptimizer(
-        X=X_scaled,
+        X=X_final,
         k=clusters,
         max_iter=iterations,
+        n_particles=population,
         n_processes=cpu
     )   
 
