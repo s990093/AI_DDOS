@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from rich.progress import Progress
 
-from CONFIG import CONFIG
+from config.CONFIG import CONFIG
 
 
 def load_and_preprocess_data(console):

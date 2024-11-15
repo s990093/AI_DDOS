@@ -78,33 +78,40 @@ class ABCOptimizer:
         
         for iteration in range(self.max_iter):
             # Employed bee phase
-            for bee in population:
-                new_centroids = self.employed_bee_phase(bee)
-                labels = self._assign_labels(new_centroids)
-                new_metrics = calculate_metrics(self.X, labels)
-                
-                if is_better_solution(new_metrics, bee.metrics):
-                    bee.centroids = new_centroids
-                    bee.metrics = new_metrics
-                    bee.trials = 0
-                else:
-                    bee.trials += 1
+            # Use parallel processing to update centroids
+            with ProcessPoolExecutor(max_workers=2) as executor:
+                futures = [executor.submit(self.employed_bee_phase, bee) for bee in population]
+                for future, bee in zip(as_completed(futures), population):
+                    new_centroids = future.result()
+                    labels = self._assign_labels(new_centroids)
+                    new_metrics = calculate_metrics(self.X, labels)
+                    
+                    if is_better_solution(new_metrics, bee.metrics):
+                        bee.centroids = new_centroids
+                        bee.metrics = new_metrics
+                        bee.trials = 0
+                    else:
+                        bee.trials += 1
             
             # Onlooker bee phase
             probabilities = self.onlooker_bee_phase(population)
-            for _ in range(self.population_size):
-                selected_bee_index = np.random.choice(len(population), p=probabilities)
-                selected_bee = population[selected_bee_index]
-                new_centroids = self.employed_bee_phase(selected_bee)
-                labels = self._assign_labels(new_centroids)
-                new_metrics = calculate_metrics(self.X, labels)
-                
-                if is_better_solution(new_metrics, selected_bee.metrics):
-                    selected_bee.centroids = new_centroids
-                    selected_bee.metrics = new_metrics
-                    selected_bee.trials = 0
-                else:
-                    selected_bee.trials += 1
+            # Use parallel processing for onlooker bee phase
+            with ProcessPoolExecutor() as executor:
+                futures = [
+                    executor.submit(self.employed_bee_phase, population[np.random.choice(len(population), p=probabilities)])
+                    for _ in range(self.population_size)
+                ]
+                for future in as_completed(futures):
+                    selected_bee = future.result()
+                    labels = self._assign_labels(selected_bee.centroids)
+                    new_metrics = calculate_metrics(self.X, labels)
+                    
+                    if is_better_solution(new_metrics, selected_bee.metrics):
+                        selected_bee.centroids = selected_bee.centroids
+                        selected_bee.metrics = new_metrics
+                        selected_bee.trials = 0
+                    else:
+                        selected_bee.trials += 1
             
             # Scout bee phase
             self._scout_bee_phase(population, k)
@@ -148,7 +155,7 @@ class ABCOptimizer:
                 total=self.k_range[1] - self.k_range[0] + 1
             )
             
-            with ProcessPoolExecutor(max_workers=5) as executor:
+            with ProcessPoolExecutor(max_workers=1) as executor:
                 future_to_k = {
                     executor.submit(self.optimize_centroids, k): k 
                     for k in range(self.k_range[0], self.k_range[1] + 1)
@@ -177,6 +184,39 @@ class ABCOptimizer:
                     
                     progress.update(k_task, advance=1)
         
+        # Initialize lists to store metrics for each k
+        inertias = []
+        silhouette_scores = []
+
+        # Iterate over the range of k values
+        for k in range(self.k_range[0], self.k_range[1]):
+            # Compute metrics for the current k
+            metrics = compute_metrics_parallel(self.X, k)
+            inertias.append(metrics['inertia'])
+            silhouette_scores.append(metrics['silhouette'])
+
+        # Create a figure with two subplots
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+
+        # Plot Elbow Method
+        ax1.plot(range(self.k_range[0], self.k_range[1]), inertias, 'bx-')
+        ax1.set_xlabel('k')
+        ax1.set_ylabel('Inertia')
+        ax1.set_title('Elbow Method For Optimal k')
+
+        # Plot Silhouette Score
+        ax2.plot(range(self.k_range[0], self.k_range[1]), silhouette_scores, 'rx-')
+        ax2.set_xlabel('k')
+        ax2.set_ylabel('Silhouette Score')
+        ax2.set_title('Silhouette Score For Optimal k')
+
+        # Adjust layout
+        plt.tight_layout()
+
+        # Save the figure
+        plt.savefig('res/abc_optimizer_clustering_metrics.png')
+        plt.close()
+
         return overall_best_k, overall_best_centroids, overall_best_metrics
     
     def _assign_labels(self, centroids):

@@ -19,8 +19,8 @@ install:
 # 訓練模型
 .PHONY: train
 train: 
-	$(PYTHON) $(SRC_DIR)/train_model.py
-
+	$(PYTHON) src/main.py -c 4 -i 200 -p 30 -k 6
+	
 # 執行預測
 .PHONY: predict
 predict:

@@ -37,15 +37,11 @@ def is_better_solution(new_metrics, old_metrics):
         bool: 如果新解更好則返回True
     """
     # 使用Davies-Bouldin指標作為主要比較標準（越小越好）
-    if new_metrics['davies_bouldin'] < old_metrics['davies_bouldin']:
-        return True
+    if new_metrics['davies_bouldin'] != old_metrics['davies_bouldin']:
+        return new_metrics['davies_bouldin'] < old_metrics['davies_bouldin']
     
     # 如果Davies-Bouldin指標相同，則比較其他指標
-    if new_metrics['davies_bouldin'] == old_metrics['davies_bouldin']:
-        if new_metrics['silhouette'] > old_metrics['silhouette']:
-            return True
-        if (new_metrics['silhouette'] == old_metrics['silhouette'] and 
-            new_metrics['calinski_harabasz'] > old_metrics['calinski_harabasz']):
-            return True
+    if new_metrics['silhouette'] != old_metrics['silhouette']:
+        return new_metrics['silhouette'] > old_metrics['silhouette']
     
-    return False 
+    return new_metrics['calinski_harabasz'] > old_metrics['calinski_harabasz']
