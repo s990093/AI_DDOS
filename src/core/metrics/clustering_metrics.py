@@ -33,10 +33,20 @@ def calculate_metrics(X, labels):
         }
 
 def is_better_solution(new_metrics, old_metrics):
-    """Compare two solutions based on their metrics."""
-    return (new_metrics['silhouette'] > old_metrics['silhouette'] and
-            new_metrics['calinski_harabasz'] > old_metrics['calinski_harabasz'] and
-            new_metrics['davies_bouldin'] < old_metrics['davies_bouldin'])
+    """Compare two solutions based on their metrics.
+    
+    Returns True if the new solution is better based on majority voting:
+    - Higher silhouette score is better (range: [-1, 1])
+    - Higher Calinski-Harabasz score is better (range: [0, ∞))
+    - Lower Davies-Bouldin score is better (range: [0, ∞))
+    """
+    improvements = [
+        new_metrics['silhouette'] > old_metrics['silhouette'],
+        new_metrics['calinski_harabasz'] > old_metrics['calinski_harabasz'],
+        new_metrics['davies_bouldin'] < old_metrics['davies_bouldin']
+    ]
+    # Return True if at least 2 metrics show improvement
+    return sum(improvements) >= 2
 
 def compute_metrics_parallel(X, k):
     """Compute clustering metrics in parallel."""
