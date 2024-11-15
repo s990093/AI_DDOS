@@ -5,9 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from rich.console import Console
 from rich.theme import Theme
-from random import randint
-from math import exp
-import pyroscope
 import click
 
 

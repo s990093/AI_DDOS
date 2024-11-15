@@ -1,4 +1,4 @@
-from ..metrics.clustering_metrics import calculate_metrics, is_better_solution, compute_metrics_parallel
+from ..metrics.clustering_metrics import calculate_metrics, is_better_solution
 from .bee import Bee
 import numpy as np
 from .bee import Bee

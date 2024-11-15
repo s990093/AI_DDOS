@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from concurrent.futures import ThreadPoolExecutor
-from sklearn.preprocessing import StandardScaler
 
 def compute_silhouette(X, labels):
     return silhouette_score(X, labels)
