@@ -1,4 +1,4 @@
-from main import console
+from train import console
 
 
 from sklearn.cluster import KMeans

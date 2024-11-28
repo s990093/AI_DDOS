@@ -164,3 +164,8 @@ cython_debug/
 /res
 data/raw/*.csv
 data/raw/iot23_combined.csv
+
+
+report.log
+
+/res
