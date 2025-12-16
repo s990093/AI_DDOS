@@ -1,0 +1,243 @@
+\documentclass[tikz, border=10pt]{standalone}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds, shadows}
+\usepackage{amsmath, amssymb}
+\usepackage{fontspec} % 如果你是用 XeLaTeX，可以用這個設定字體，否則請忽略
+% \setmainfont{Arial} % 可選：設定類似圖片的無襯線字體
+
+% 定義顏色 (盡量接近原圖)
+\definecolor{lightcyan}{RGB}{220, 245, 255}
+\definecolor{myblue}{RGB}{200, 220, 255}
+\definecolor{mygreen}{RGB}{210, 255, 180}
+\definecolor{darkgreen}{RGB}{100, 180, 80}
+\definecolor{myorange}{RGB}{255, 210, 150}
+\definecolor{mypink}{RGB}{255, 180, 190}
+\definecolor{mydarkpink}{RGB}{230, 100, 120}
+\definecolor{myviolet}{RGB}{200, 160, 255}
+
+
+
+
+\begin{document}
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    >={Latex[width=3mm,length=3mm]},
+    node distance=0.5cm,
+    % 樣式定義
+    basebox/.style={draw, rounded corners, align=center, line width=0.8pt},
+    titlebox/.style={fill=lightcyan, draw=none, minimum height=1cm, text width=14cm, align=center, font=\bfseries},
+    bluecontainer/.style={basebox, fill=myblue!40, draw=blue!60!black, inner sep=10pt},
+    greencontainer/.style={basebox, fill=mygreen!40, draw=darkgreen, inner sep=10pt},
+    darkgreenbox/.style={basebox, fill=darkgreen!80, draw=darkgreen!40!black, text=white, font=\bfseries},
+    orangebox/.style={basebox, fill=myorange, draw=orange!80!black},
+    pinkbox/.style={basebox, fill=mypink, draw=mydarkpink, rounded corners=5pt},
+    violetbox/.style={basebox, fill=myviolet, draw=violet!80!black, text=white},
+    arrow/.style={->, line width=2pt, draw=black},
+    dasharrow/.style={->, dashed, line width=1.5pt},
+    process/.style={basebox, fill=white, draw=black, minimum height=0.8cm},
+    ]
+
+    % =========================================================
+    % 1. TOP: Network Traffic Input
+    % =========================================================
+    \node[titlebox] (input) {Network Traffic Input (Protocol, Flow Duration, Flow Bytes/s, Total Packets, $\cdots$)};
+
+    % =========================================================
+    % 2. MIDDLE LEFT: Feature Engineering
+    % =========================================================
+    % 標題
+    \node[below=0.3cm of input, font=\bfseries] (fe_title) {Feature Engineering and Selection Module};
+    
+    % 內容容器
+    \node[bluecontainer, below=0.1cm of fe_title, minimum width=14cm, minimum height=3cm] (fe_box) {};
+    
+    % 內部左側：Multi-Entropy
+    \node[basebox, fill=blue!10, draw=blue!40, minimum width=5cm, minimum height=2cm, right=0.5cm of fe_box.west, anchor=west] (entropy_box) {};
+    \node[below right=0.2cm and 0.2cm of entropy_box.north west, font=\bfseries] {Multi-Entropy Computation};
+    
+    \node[process, fill=white, minimum width=1.3cm, below=0.8cm of entropy_box.north, xshift=-1.5cm] (shannon) {Shannon};
+    \node[process, fill=white, minimum width=1.3cm, right=0.2cm of shannon] (renyi) {Rényi};
+    \node[process, fill=white, minimum width=1.3cm, right=0.2cm of renyi] (min) {Min};
+
+    % 箭頭
+    \node[single arrow, draw=none, fill=magenta!50, minimum height=1cm, right=0.5cm of entropy_box] (fe_arrow) {};
+
+    % 內部右側：Formula
+    \node[right=0.5cm of fe_arrow, align=center] (formula_text) {
+        {\huge $H(X \mid \text{ddos})$} \\[0.5em]
+        Select top 10\% of features with \\ lowest conditional entropy
+    };
+
+    % 連接 Top 到 FE
+    \draw[arrow] (input) -- (fe_title);
+
+    % =========================================================
+    % 3. BOTTOM LEFT: Stage 1 (PSO-GMM)
+    % =========================================================
+    \node[below=0.6cm of fe_box, font=\bfseries] (st1_title) {Stage 1: PSO-GMM Anomalous Traffic Clustering Module};
+    
+    % 綠色大容器
+    \node[greencontainer, below=0.1cm of st1_title, minimum width=14cm, minimum height=7cm] (st1_box) {};
+
+    % 左下內部：GMM Logic
+    \node[basebox, fill=green!20, draw=darkgreen, minimum width=6cm, minimum height=4cm, below right=0.5cm and 0.5cm of st1_box.north west] (gmm_logic) {};
+    \node[below=0.2cm of gmm_logic.north, font=\bfseries, align=center] {GMM Initialization Optimization \\ Module (PSO-based)};
+    
+    % EM Box inside
+    \node[basebox, fill=green!10, draw=black, minimum width=5cm, minimum height=2.2cm, below=0.8cm of gmm_logic.north] (em_box) {};
+    \node[below=0.1cm of em_box.north, font=\bfseries] {EM algorithm iteration};
+    \node[process, fill=green!5, width=4.5cm, below=0.5cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
+    \node[process, fill=green!5, width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
+
+    % 循環箭頭
+    \node[right=0.2cm of em_box] (cycle) {\Huge $\boldsymbol{\circlearrowright}$};
+    \node[above=0cm of cycle, font=\footnotesize] {Iteration};
+
+    % Convergence Text
+    \node[below=0.1cm of em_box, align=center, font=\footnotesize] {Convergence check (Log-\\Likelihood) and output $\theta^*$};
+
+    % 右下內部：Objective Function
+    \node[basebox, fill=green!20, draw=darkgreen, minimum width=6.5cm, minimum height=3cm, right=1cm of gmm_logic] (obj_box) {};
+    \node[below=0.1cm of obj_box.north, font=\bfseries] {Objective Function};
+    \node[below=0.2cm of obj_box.north, anchor=center] (eq_node) at (obj_box.center) {
+        \resizebox{6cm}{!}{
+        $F(\mathbf{w}) =
+        \begin{cases}
+        \min\limits_{k \in K} \left[ -w_{\text{ddos}} \frac{d_k}{N} + w_{\text{benign}} \frac{b_k}{d_k + b_k} \right], & \text{if } \exists k \in K : \frac{d_k}{d_k + b_k} \ge \theta \\
+        \lambda_{\text{penalty}}, & \text{otherwise}.
+        \end{cases}$
+        }
+    };
+
+    % 下方橘色：Output Classification
+    \node[orangebox, minimum width=6.5cm, minimum height=2cm, below=0.3cm of obj_box] (class_box) {};
+    \node[below=0.1cm of class_box.north, font=\bfseries] {Output cluster classification:};
+    \node[below=0.5cm of class_box.north, align=left, font=\small, anchor=center] {
+        1. $\ge \theta \to$ cddos (high-purity DDoS) \\
+        2. $< \theta \to$ cmixed (passed to stage 2 \\ \hspace{1em} for further analysis)
+    };
+
+    % 綠色箭頭連接 GMM 到 Output
+    \node[single arrow, draw=none, fill=green!60!black, minimum height=1cm, rotate=0] at ($(gmm_logic.south)!0.5!(class_box.west)$) {};
+
+    % 連接 FE 到 Stage 1
+    \draw[arrow] (fe_box) -- (st1_title);
+
+    % =========================================================
+    % 4. RIGHT SIDE: Stage 2 (Deep Analysis / Mamba)
+    % =========================================================
+    
+    % Stage 2 大容器
+    \node[greencontainer, right=1cm of st1_box, minimum width=12cm, minimum height=12cm, anchor=south west] (st2_box) at (st1_box.south east) {};
+    % 調整位置跟左邊對齊
+    \node[above=0.1cm of st2_box.north, font=\bfseries, anchor=south] {Stage-2 : Deep Analysis};
+
+    % -- Left Sub-column of Stage 2 (Main Stack) --
+    \coordinate (stack_top) at ($(st2_box.north west) + (2.5cm, -1.5cm)$);
+
+    \node[above=0.2cm of stack_top, font=\small] {$cmixed[B, T, Din]$};
+    \draw[->, thick] ($(stack_top)+(0,0.5)$) -- (stack_top);
+
+    \node[pinkbox, minimum width=3cm] (lin1) at (stack_top) {Linear+\\LayerNorm+Dropout};
+    \node[pinkbox, below=0.3cm of lin1] (posenc) {Positional Encoding};
+    
+    % Mamba Stack
+    \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1.5cm, below=0.3cm of posenc] (mamba_stack) {};
+    % Create stack effect
+    \foreach \i in {1,2,3} {
+        \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1cm, anchor=center] at ($(mamba_stack.center) + (\i*2pt, \i*2pt)$) {};
+    }
+    \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1cm, below=0.3cm of posenc] (mamba_block) {Mamba block};
+    \node[left=0.1cm of mamba_block] {x4};
+
+    \node[violetbox, below=0.3cm of mamba_stack, minimum width=3cm] (pool) {Mean Pooling};
+    \node[darkgreenbox, below=0.3cm of pool, minimum width=3cm] (ffn) {FFN};
+    \node[pinkbox, below=0.3cm of ffn, minimum width=3cm] (lin2) {LayerNorm+Dropout};
+    \node[orangebox, rounded corners=10pt, below=0.3cm of lin2, minimum width=3cm] (sigmoid) {Linear $\to$ Sigmoid};
+
+    % Arrows in stack
+    \draw[->, thick] (lin1) -- (posenc);
+    \draw[->, thick] (posenc) -- (mamba_block);
+    \draw[->, thick] (mamba_stack) -- (pool);
+    \draw[->, thick] (pool) -- (ffn);
+    \draw[->, thick] (ffn) -- (lin2);
+    \draw[->, thick] (lin2) -- (sigmoid);
+
+    % Output
+    \draw[->, thick] (sigmoid.east) -- ++(0.5,0) node[right, font=\small] {Output [B, 1]};
+
+    % -- Right Sub-column: Mamba Detail View --
+    \node[draw, dashed, inner sep=10pt, fit={(mamba_block) (lin2)}, right=1cm of mamba_block] (detail_frame) {};
+    % Actually, let's just draw the components relative to the right side
+    
+    \coordinate (detail_center) at ($(st2_box.east) - (4cm, 0)$);
+    \coordinate (detail_top) at ($(detail_center) + (0, 3)$);
+
+    \node[align=center, font=\bfseries] at ($(detail_top) + (2, 0.5)$) {Mamba};
+
+    % Input array
+    \foreach \x in {0,...,7} 
+        \fill[cyan!40] ($(detail_top) + (\x*0.4, 0)$) rectangle ++(0.3, 0.3);
+    \node[right=0.1cm of detail_top] (detail_in) {};
+    \node[below=0.1cm of detail_in, xshift=1.5cm] {Input};
+
+    % Branches
+    \coordinate (split) at ($(detail_top) + (1.5, -0.5)$);
+    \draw[thick] ($(detail_top)+(1.5,0)$) -- (split);
+
+    % Left Branch
+    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.5cm, below left=0.5cm and 0.1cm of split] (proj1) {Projection};
+    \node[basebox, fill=cyan!10, below=0.3cm of proj1] (conv) {Conv};
+    \node[circle, fill=mypink, inner sep=2pt, below=0.3cm of conv] (silu1) {$\sigma$}; \node[right=0.1cm of silu1] {SiLU};
+    \node[basebox, fill=blue!10, below=0.3cm of silu1, minimum width=1.5cm] (ssm) {SSM};
+
+    % Right Branch
+    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.5cm, below right=0.5cm and 0.1cm of split] (proj2) {Projection};
+    \node[circle, fill=mypink, inner sep=2pt] (silu2) at (silu1 -| proj2) {$\sigma$}; \node[right=0.1cm of silu2] {SiLU};
+
+    % Connections
+    \draw[thick] (split) -| (proj1);
+    \draw[thick] (split) -| (proj2);
+    \draw[thick] (proj1) -- (conv);
+    \draw[thick] (conv) -- (silu1);
+    \draw[thick] (silu1) -- (ssm);
+    \draw[thick] (proj2) -- (silu2);
+
+    % Multiply
+    \node[circle, draw, cross out, inner sep=2pt, minimum size=0.5cm, below=0.5cm of ssm] (mult) {}; 
+    \draw[thick] (ssm) -- (mult);
+    \draw[thick] (silu2) |- (mult);
+
+    % Final Projection
+    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.5cm, below=0.5cm of mult] (proj_final) {Projection};
+    \draw[thick] (mult) -- (proj_final);
+
+    % Output array
+    \coordinate (detail_out) at ($(proj_final.south) + (-1.5, -0.5)$);
+    \foreach \x in {0,...,7} 
+        \fill[mypink] ($(detail_out) + (\x*0.4, 0)$) rectangle ++(0.3, 0.3);
+    \node[above=0.1cm of detail_out, xshift=1.5cm] {Output};
+    \draw[thick] (proj_final) -- ($(detail_out) + (1.5, 0.3)$);
+
+    % -- Zoom lines (Dashed) --
+    % From Stack to Detail Input
+    \draw[dasharrow, cyan] (mamba_block.east) to[out=0, in=180] ($(detail_top) + (0, 0.15)$);
+    % From Detail Output back to Stack
+    \draw[dasharrow, mydarkpink] ($(detail_out) + (0, 0.15)$) to[out=180, in=0] (mamba_block.south east);
+
+    % Box around Mamba Detail
+    \node[draw, dashed, inner sep=5pt, fit={(detail_top) (detail_out) (proj2)}, rounded corners] (zoom_box) {};
+
+    % =========================================================
+    % 5. GLOBAL CONNECTIONS
+    % =========================================================
+    % Stage 1 to Stage 2 arrow
+    \draw[arrow, line width=4pt] (st1_box.east) -- (st2_box.west);
+    \node[above=0.1cm of st1_box.east, xshift=0.5cm, font=\bfseries] {cmixed};
+
+    % Final Block/Pass text
+    \node[right=0.2cm of sigmoid, font=\bfseries\Large] (final_dec) {Block or Pass};
+    \draw[arrow, line width=4pt] (sigmoid) -- (final_dec);
+
+\end{tikzpicture}
+\end{document}
