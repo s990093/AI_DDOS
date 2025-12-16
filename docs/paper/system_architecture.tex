@@ -1,6 +1,6 @@
 \documentclass[tikz, border=10pt]{standalone}
 \usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds, shadows}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds, shadows, shapes.arrows, shapes.misc}
 \usepackage{amsmath, amssymb}
 % \usepackage{fontspec} % 如果你是用 XeLaTeX，可以用這個設定字體，否則請忽略
 % \setmainfont{Arial} % 可選：設定類似圖片的無襯線字體
@@ -86,8 +86,8 @@
     % EM Box inside
     \node[basebox, fill=green!10, draw=black, minimum width=5cm, minimum height=2.2cm, below=0.8cm of gmm_logic.north] (em_box) {};
     \node[below=0.1cm of em_box.north, font=\bfseries] {EM algorithm iteration};
-    \node[process, fill=green!5, width=4.5cm, below=0.5cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
-    \node[process, fill=green!5, width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
+    \node[process, fill=green!5, minimum width=4.5cm, below=0.5cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
+    \node[process, fill=green!5, minimum width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
 
     % 循環箭頭
     \node[right=0.2cm of em_box] (cycle) {\Huge $\boldsymbol{\circlearrowright}$};
