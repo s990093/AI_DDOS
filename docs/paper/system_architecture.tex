@@ -12,6 +12,7 @@
 \definecolor{headergreen}{RGB}{160, 220, 130}
 \definecolor{containergreen}{RGB}{200, 240, 180}
 \definecolor{darkgreentitle}{RGB}{80, 150, 60}
+\definecolor{darkgreen}{RGB}{100, 180, 80} % Restored missing color
 \definecolor{innergreen}{RGB}{180, 220, 150}
 \definecolor{emgreen}{RGB}{210, 235, 190}
 
@@ -117,8 +118,8 @@
     % EM Algorithm Box inside GMM
     \node[basebox, fill=emgreen, minimum width=5cm, minimum height=2.2cm, below=0.3cm of gmm_title] (em_box) {};
     \node[below=0.1cm of em_box.north, font=\bfseries\scriptsize] {EM algorithm iteration};
-    \node[process, fill=white, width=4.5cm, below=0.4cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
-    \node[process, fill=white, width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
+    \node[process, fill=white, minimum width=4.5cm, below=0.4cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
+    \node[process, fill=white, minimum width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
 
     % Iteration Cycle Arrows
     \draw[thickarrow, bend left=45] ($(em_box.east)+(0.1, 0.4)$) to node[right, font=\scriptsize] {Iteration} ($(em_box.east)+(0.1, -0.4)$);
