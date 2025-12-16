@@ -3,96 +3,135 @@
 \usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds, shadows, shapes.arrows, shapes.misc}
 \usepackage{amsmath, amssymb}
 
-% Colors
-\definecolor{lightcyan}{RGB}{220, 245, 255}
-\definecolor{myblue}{RGB}{200, 220, 255}
-\definecolor{mygreen}{RGB}{210, 255, 180}
-\definecolor{darkgreen}{RGB}{100, 180, 80}
-\definecolor{myorange}{RGB}{255, 210, 150}
-\definecolor{mypink}{RGB}{255, 180, 190}
-\definecolor{mydarkpink}{RGB}{230, 100, 120}
-\definecolor{myviolet}{RGB}{200, 160, 255}
-\definecolor{arrowblack}{RGB}{0, 0, 0}
+% Colors Definition matching the original image closely
+\definecolor{headerblue}{RGB}{180, 210, 255}
+\definecolor{containerblue}{RGB}{210, 230, 255}
+\definecolor{innerblue}{RGB}{225, 240, 255}
+\definecolor{arrowpurple}{RGB}{200, 130, 220}
+
+\definecolor{headergreen}{RGB}{160, 220, 130}
+\definecolor{containergreen}{RGB}{200, 240, 180}
+\definecolor{darkgreentitle}{RGB}{80, 150, 60}
+\definecolor{innergreen}{RGB}{180, 220, 150}
+\definecolor{emgreen}{RGB}{210, 235, 190}
+
+\definecolor{myorange}{RGB}{255, 200, 140}
+\definecolor{mypink}{RGB}{255, 170, 180}
+\definecolor{mydarkpink}{RGB}{220, 100, 120}
+\definecolor{myviolet}{RGB}{190, 150, 240}
+\definecolor{mambacyan}{RGB}{180, 230, 240}
 
 \begin{document}
 \begin{tikzpicture}[
     font=\sffamily,
     >=Latex,
     node distance=0.5cm,
-    % Styles
-    basebox/.style={draw, rounded corners, align=center, line width=0.8pt, font=\small},
-    titlebox/.style={fill=lightcyan, draw=none, minimum height=0.8cm, text width=11cm, align=center, font=\bfseries\small},
-    sectiontitle/.style={font=\bfseries\large, align=center},
-    container/.style={draw, line width=1pt, rounded corners, inner sep=10pt},
-    process/.style={basebox, fill=white, draw=black, minimum height=0.7cm},
-    darkgreenbox/.style={basebox, fill=darkgreen!80, draw=darkgreen!40!black, text=white, font=\bfseries},
+    % General Styles
+    mainarrow/.style={->, line width=3pt, draw=black},
+    thickarrow/.style={->, line width=2pt},
+    basebox/.style={draw=black, line width=0.8pt, rounded corners, align=center, font=\small},
+    % Input Style
+    inputbox/.style={fill=headerblue!50, draw=none, minimum height=0.8cm, text width=12cm, align=center, font=\bfseries\small, rounded corners},
+    % Containers & Headers
+    bluecontainer/.style={fill=containerblue, draw=blue!40!black, line width=1pt, rounded corners, inner sep=0pt},
+    greencontainer/.style={fill=containergreen, draw=darkgreen, line width=1pt, rounded corners, inner sep=0pt},
+    containerheader/.style={font=\bfseries\large, align=center, minimum height=1cm},
+    % Inner Boxes Styles
+    process/.style={basebox, fill=white, minimum height=0.7cm},
+    innerbluebox/.style={basebox, fill=innerblue, draw=blue!40},
+    darkgreentitlebox/.style={fill=darkgreentitle, text=white, font=\bfseries\small, align=center, rounded corners, minimum height=0.7cm},
+    innergreenbox/.style={basebox, fill=innergreen, draw=darkgreentitle},
     orangebox/.style={basebox, fill=myorange, draw=orange!80!black},
     pinkbox/.style={basebox, fill=mypink, draw=mydarkpink, rounded corners=5pt},
     violetbox/.style={basebox, fill=myviolet, draw=violet!80!black, text=white},
+    mambabox/.style={basebox, fill=mambacyan, draw=black},
+    % Mamba Detail Styles
+    proj trap/.style={trapezium, draw=darkgreentitle, fill=innergreen, trapezium left angle=70, trapezium right angle=70, minimum width=1.2cm, font=\scriptsize},
+    silu circle/.style={circle, fill=mypink, inner sep=1pt, font=\small}
     ]
 
     % =========================================================
-    % 1. TOP: Input
+    % 1. TOP: Network Traffic Input
     % =========================================================
-    \node[titlebox] (input) {Network Traffic Input (Protocol, Flow Duration, Flow Bytes/s, Total Packets, $\cdots$)};
+    \node[inputbox] (input) {Network Traffic Input (Protocol, Flow Duration, Flow Bytes/s, Total Packets, $\cdots$)};
     
-    \node[single arrow, fill=black, rotate=-90, minimum height=0.8cm, below=0.2cm of input] (arrow1) {};
+    % Main arrow down
+    \draw[mainarrow] ($(input.south)+(0,-0.2)$) -- ++(0,-1);
 
     % =========================================================
-    % 2. Feature Engineering
+    % 2. Feature Engineering Module (Blue Container)
     % =========================================================
-    % Define Content First
-    \node[sectiontitle, below=0.5cm of arrow1] (fe_title) {Feature Engineering and Selection Module};
+    \node[below=1.4cm of input, minimum width=13cm, minimum height=3.5cm] (fe_center) {};
     
-    % Group: Entropy
-    \node[below=1.5cm of fe_title, xshift=-3cm] (renyi) [process, minimum width=1.2cm] {Rényi};
-    \node[process, minimum width=1.2cm, left=0.2cm of renyi] (shannon) {Shannon};
-    \node[process, minimum width=1.2cm, right=0.2cm of renyi] (min) {Min};
+    % Container Background
+    \begin{scope}[on background layer]
+        \node[bluecontainer, fit={(fe_center)}] (fe_box) {};
+    \end{scope}
     
-    % Wrapper for Entropy
-    \node[basebox, fill=blue!10, draw=blue!40, fit={(shannon) (min) ($(renyi)+(0,0.8)$)}, inner sep=5pt] (entropy_box) {};
-    \node[anchor=north, font=\bfseries] at (entropy_box.north) {Multi-Entropy Computation};
+    % Header Text
+    \node[above=0.1cm of fe_box.north, anchor=south, font=\bfseries\large] {Feature Engineering and Selection Module};
     
-    % Formula
-    \node[right=2cm of entropy_box, align=center, text width=5cm] (formula) {
-        {\Huge $H(X \mid \text{ddos})$} \\[0.5em]
-        \textbf{Select top 10\% of features with \\ lowest conditional entropy}
+    % Left Content: Entropy
+    \node[innerbluebox, minimum width=5.5cm, minimum height=2.5cm, left=0.5cm of fe_center] (entropy_container) {};
+    \node[below right=0.1cm of entropy_container.north west, font=\bfseries\small] {Multi-Entropy Computation};
+    
+    \node[process, minimum width=1.3cm, below=0.8cm of entropy_container.north, xshift=-1.8cm] (shannon) {Shannon};
+    \node[process, minimum width=1.3cm, right=0.3cm of shannon] (renyi) {Rényi};
+    \node[process, minimum width=1.3cm, right=0.3cm of renyi] (min) {Min};
+    
+    % Right Content: Formula
+    \node[innerbluebox, minimum width=5.5cm, minimum height=2.5cm, right=0.5cm of fe_center] (formula_container) {};
+    \node[align=center] at (formula_container.center) {
+        {\Huge $H(X \mid \text{ddos})$} \\[0.8em]
+        \textbf{\small Select top 10\% of features with \\ lowest conditional entropy}
     };
     
-    % Arrow between them
-    \node[single arrow, fill=magenta!60, minimum height=1cm] at ($(entropy_box.east)!0.5!(formula.west)$) {};
+    % Purple connecting arrow
+    \node[single arrow, fill=arrowpurple, minimum height=1.2cm, minimum width=1.2cm] at (fe_center) {};
 
-    % Container (Background)
+    % Main arrow down to Stage 1
+    \draw[mainarrow] ($(fe_box.south)+(0,-0.2)$) -- ++(0,-1);
+
+    % =========================================================
+    % 3. Stage 1: PSO-GMM (Green Container) - 左側
+    % =========================================================
+    \node[below=1.5cm of fe_box, minimum width=13cm, minimum height=7cm] (st1_center) {};
+
+    % Container Background & Header
     \begin{scope}[on background layer]
-        \node[container, fill=myblue!40, draw=blue!60!black, fit={(fe_title) (entropy_box) (formula)}, inner sep=10pt] (fe_container) {};
+        \node[greencontainer, fit={(st1_center)}] (st1_box) {};
+        % Header Bar
+        \fill[headergreen, rounded corners] (st1_box.north west) rectangle ($(st1_box.north east) + (0, -1)$);
+        \node[containerheader] at ($(st1_box.north)!0.5!(st1_box.north east) + (-6.5, -0.5)$) {Stage 1: PSO-GMM Anomalous Traffic Clustering Module};
     \end{scope}
 
-    % =========================================================
-    % 3. Stage 1
-    % =========================================================
-    \node[single arrow, fill=black, rotate=-90, minimum height=0.8cm, below=0.2cm of fe_container] (arrow2) {};
-    \node[sectiontitle, below=0.2cm of arrow2] (st1_title) {Stage 1: PSO-GMM Anomalous Traffic Clustering Module};
-    
-    % GMM Logic (Left)
-    % EM Box
-    \node[basebox, fill=darkgreen!10, draw=black, minimum width=4.5cm, minimum height=2.5cm, below=1.8cm of st1_title, xshift=-3.5cm] (em_box) {};
-    
-    \node[below=0.1cm of em_box.north, font=\bfseries] {EM algorithm iteration};
-    \node[process, fill=green!5, minimum width=4cm, below=0.5cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
-    \node[process, fill=green!5, minimum width=4cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
-    
-    % Cycle and text
-    \node[right=0.1cm of em_box, font=\LARGE] {$\boldsymbol{\circlearrowright}$};
-    \node[below=0.1cm of em_box, align=center, font=\scriptsize] {Convergence check (Log-\\Likelihood) and output $\theta^*$};
-    
-    % Wrapper GMM
-    \node[basebox, fill=green!20, draw=darkgreen, fit={(em_box) ($(em_box)+(0,1.3)$) ($(em_box)+(0,-0.8)$)}, inner sep=5pt] (gmm_logic) {};
-    \node[above=0.1cm of em_box, font=\bfseries, align=center, fill=darkgreen!80, text=white, minimum width=4.8cm, rounded corners] at (gmm_logic.north) {GMM Initialization Optimization \\ Module (PSO-based)};
+    % --- Layout inside Stage 1 ---
+    \coordinate (st1_content_top) at ($(st1_box.north) + (0, -1.2)$);
 
-    % Objective Function (Right Top)
-    \node[basebox, fill=darkgreen!10, draw=none, right=1cm of gmm_logic, anchor=north west] (obj_box) {
-         \\[1.5em]
-        \resizebox{5.5cm}{!}{
+    % Left Sub-module: GMM Initialization
+    \node[innergreenbox, minimum width=6cm, minimum height=4cm, below left=0cm and 0.2cm of st1_content_top, anchor=north] (gmm_box) {};
+    
+    % Title bar for GMM
+    \node[darkgreentitlebox, minimum width=5.8cm, below=0.1cm of gmm_box.north] (gmm_title) {GMM Initialization Optimization \\ Module (PSO-based)};
+    
+    % EM Algorithm Box inside GMM
+    \node[basebox, fill=emgreen, minimum width=5cm, minimum height=2.2cm, below=0.3cm of gmm_title] (em_box) {};
+    \node[below=0.1cm of em_box.north, font=\bfseries\scriptsize] {EM algorithm iteration};
+    \node[process, fill=white, width=4.5cm, below=0.4cm of em_box.north] (estep) {E-Step $\mid \to \mathbf{\gamma}$};
+    \node[process, fill=white, width=4.5cm, below=0.2cm of estep] (mstep) {M-Step $\mid \to \{ \mathbf{\mu}, \mathbf{\Sigma}, \mathbf{\pi} \}$};
+
+    % Iteration Cycle Arrows
+    \draw[thickarrow, bend left=45] ($(em_box.east)+(0.1, 0.4)$) to node[right, font=\scriptsize] {Iteration} ($(em_box.east)+(0.1, -0.4)$);
+    \draw[thickarrow, bend left=45] ($(em_box.east)+(0.1, -0.4)$) to ($(em_box.east)+(0.1, 0.4)$);
+
+    % Convergence Text
+    \node[below=0.1cm of em_box, align=center, font=\scriptsize] {Convergence check (Log-\\Likelihood) and output $\theta^*$};
+
+    % Right Sub-module: Objective Function
+    \node[innergreenbox, minimum width=6cm, minimum height=3cm, below right=0cm and 0.2cm of st1_content_top, anchor=north] (obj_box) {};
+    \node[darkgreentitlebox, minimum width=5.8cm, below=0.1cm of obj_box.north] (obj_title) {Objective Function};
+    \node[below=0.2cm of obj_title] {
+        \resizebox{5.2cm}{!}{
         $F(\mathbf{w}) =
         \begin{cases}
         \min\limits_{k \in K} \left[ -w_{\text{ddos}} \frac{d_k}{N} + w_{\text{benign}} \frac{b_k}{d_k + b_k} \right], & \text{if } \exists k \in K : \frac{d_k}{d_k + b_k} \ge \theta \\
@@ -100,73 +139,83 @@
         \end{cases}$
         }
     };
-    \node[below=0.1cm of obj_box.north, font=\bfseries, align=center, fill=darkgreen!80, text=white, minimum width=5.5cm, rounded corners] at (obj_box.north) {Objective Function};
 
-    % Output Classification (Right Bottom)
-    \node[basebox, fill=myorange, draw=orange!80!black, below=0.5cm of obj_box, minimum width=6cm, align=left] (class_box) {
+    % Bottom Sub-module: Classification (Orange)
+    \node[orangebox, minimum width=6.5cm, minimum height=2cm, below=4.5cm of st1_content_top, xshift=3cm] (class_box) {
         \textbf{\hspace{1em}Output cluster classification:} \\[0.5em]
         \hspace{1em}1. $\ge \theta \to$ cddos (high-purity DDoS) \\
         \hspace{1em}2. $< \theta \to$ cmixed (passed to stage 2 \\ \hspace{3em} for further analysis)
     };
 
-    % Arrow inside Stage 1
-    \node[single arrow, fill=mygreen!80!darkgreen, minimum height=1cm] at ($(gmm_logic.south)!0.5!(class_box.west)$) {};
-
-    % Container (Background)
-    \begin{scope}[on background layer]
-        \node[container, fill=mygreen!40, draw=darkgreen, fit={(st1_title) (gmm_logic) (class_box) (obj_box)}, inner sep=10pt] (st1_container) {};
-    \end{scope}
+    % Green Arrow connecting GMM to Classification
+    \draw[->, line width=4pt, draw=darkgreentitle] (gmm_box.south) -- ++(0,-0.5) -| ($(class_box.west)+(0.5,0)$);
 
     % =========================================================
-    % 4. Stage 2 (Right Column)
+    % 4. Global Connection (Stage 1 to Stage 2)
     % =========================================================
-    % Stack
-    \node[pinkbox, minimum width=3cm, right=4cm of input, yshift=-4cm] (lin1) {Linear+\\LayerNorm+Dropout};
-    \node[above=0.3cm of lin1, font=\small, draw, dashed] (input_dim) {$cmixed[B, T, Din]$};
-    \draw[->, thick] (input_dim) -- (lin1);
+    \node[right=1.5cm of st1_box] (st2_placeholder) {};
+    \draw[mainarrow] (st1_box.east) -- node[below=0.3cm, font=\bfseries\large] {cmixed} (st2_placeholder);
+
+    % =========================================================
+    % 5. Stage 2: Deep Analysis (Right Side)
+    % =========================================================
+    % Container
+    \node[greencontainer, right=2cm of st1_box.north east, anchor=north west, minimum width=11cm, minimum height=12cm] (st2_box) {};
+    % Header Bar
+    \fill[headergreen, rounded corners] (st2_box.north west) rectangle ($(st2_box.north east) + (0, -1)$);
+    \node[containerheader] at ($(st2_box.north)!0.5!(st2_box.north east) + (-5.5, -0.5)$) {Stage-2 : Deep Analysis};
     
+    \coordinate (st2_content_top) at ($(st2_box.north west) + (2.5cm, -2cm)$);
+
+    % Left Column: The Stack
+    \node[above=0.2cm of st2_content_top, font=\small, draw, dashed, inner sep=3pt] (input_dim) {$cmixed[B, T, Din]$};
+    
+    \node[pinkbox, minimum width=3cm, below=0.5cm of input_dim] (lin1) {Linear+\\LayerNorm+Dropout};
     \node[pinkbox, minimum width=3cm, below=0.3cm of lin1] (posenc) {Positional Encoding};
     
-    % Mamba Stack
-    \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1.5cm, below=0.3cm of posenc] (mamba_stack) {};
-    \foreach \i in {1,2,3} { \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1cm] at ($(mamba_stack.center) + (\i*2pt, \i*2pt)$) {}; }
-    \node[basebox, fill=cyan!10, draw=black, minimum width=3cm, minimum height=1cm, below=0.3cm of posenc] (mamba_block) {Mamba block};
-    \node[left=0.1cm of mamba_block] {x4};
+    % Mamba Stack effect
+    \node[mambabox, minimum width=3cm, minimum height=1.2cm, below=0.3cm of posenc] (mamba_stack_bg) {};
+    \foreach \i in {1,2,3} { \node[mambabox, minimum width=3cm, minimum height=1cm] at ($(mamba_stack_bg.center) + (\i*2pt, \i*2pt)$) {}; }
+    \node[mambabox, minimum width=3cm, minimum height=1cm, below=0.3cm of posenc] (mamba_block) {Mamba block};
+    \node[left=0.1cm of mamba_block, font=\small] {x4};
     
-    \node[violetbox, minimum width=3cm, below=0.3cm of mamba_stack] (pool) {Mean Pooling};
-    \node[darkgreenbox, minimum width=3cm, below=0.3cm of pool] (ffn) {FFN};
+    \node[violetbox, minimum width=3cm, below=0.3cm of mamba_stack_bg] (pool) {Mean Pooling};
+    \node[darkgreentitlebox, minimum width=3cm, below=0.3cm of pool] (ffn) {FFN};
     \node[pinkbox, minimum width=3cm, below=0.3cm of ffn] (lin2) {LayerNorm+Dropout};
     \node[orangebox, rounded corners=10pt, minimum width=3cm, below=0.3cm of lin2] (sigmoid) {Linear $\to$ Sigmoid};
 
     % Stack Arrows
-    \draw[->, thick] (lin1) -- (posenc);
-    \draw[->, thick] (posenc) -- (mamba_block);
-    \draw[->, thick] (mamba_stack) -- (pool);
-    \draw[->, thick] (pool) -- (ffn);
-    \draw[->, thick] (ffn) -- (lin2);
-    \draw[->, thick] (lin2) -- (sigmoid);
-    
-    % Detail View
-    \node[right=2cm of mamba_stack, font=\bfseries] (detail_title) {Mamba};
-    \coordinate (detail_top) at ($(detail_title)+(0,-0.5)$);
+    \draw[thickarrow] (input_dim) -- (lin1);
+    \draw[thickarrow] (lin1) -- (posenc);
+    \draw[thickarrow] (posenc) -- (mamba_block);
+    \draw[thickarrow] (mamba_stack_bg) -- (pool);
+    \draw[thickarrow] (pool) -- (ffn);
+    \draw[thickarrow] (ffn) -- (lin2);
+    \draw[thickarrow] (lin2) -- (sigmoid);
+
+    % Right Column: Mamba Detail View
+    \coordinate (detail_top) at ($(st2_box.north east) + (-3cm, -2.5cm)$);
+    \node[font=\bfseries\large, right=1cm of mamba_block] (mamba_title) {Mamba};
     
     % Input Array
-    \foreach \x in {-2,-1,0,1,2} \fill[cyan!40] ($(detail_top) + (\x*0.3, 0)$) rectangle ++(0.25, 0.25);
-    \coordinate (d_in) at ($(detail_top) + (0, -0.1)$);
-    \node[below left=0cm and 0.5cm of d_in] {Input};
+    \coordinate (d_in_start) at ($(mamba_title.south) + (-1, -0.5)$);
+    \foreach \x in {0,1,...,7} \fill[mambacyan!80!blue] ($(d_in_start) + (\x*0.25, 0)$) rectangle ++(0.2, 0.25);
+    \coordinate (d_in_center) at ($(d_in_start) + (4*0.25, 0)$);
+    \node[below=0.3cm of d_in_start, xshift=1cm, font=\scriptsize] {Input};
     
-    % Split
-    \coordinate (split) at ($(d_in) + (0, -0.5)$);
-    \draw[thick] (d_in) -- (split);
+    % Split & Branches
+    \coordinate (split) at ($(d_in_center) + (0, -0.8)$);
+    \draw[thick] ($(d_in_center)+(0, 0.1)$) -- (split);
     
-    % Branches
-    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.2cm, below left=0.5cm and 0.5cm of split] (proj1) {\scriptsize Projection};
-    \node[basebox, fill=cyan!10, below=0.3cm of proj1, minimum width=1.2cm] (conv) {\scriptsize Conv};
-    \node[circle, fill=mypink, inner sep=1pt, below=0.3cm of conv] (silu1) {$\sigma$}; \node[right=0cm of silu1, font=\tiny] {SiLU};
-    \node[basebox, fill=blue!10, below=0.3cm of silu1, minimum width=1.2cm] (ssm) {\scriptsize SSM};
+    % Left Branch
+    \node[proj trap, below left=0.5cm and 0.2cm of split] (proj1) {Projection};
+    \node[mambabox, below=0.3cm of proj1, minimum width=1.2cm, font=\scriptsize] (conv) {Conv};
+    \node[silu circle, below=0.3cm of conv] (silu1) {$\sigma$}; \node[right=0cm of silu1, font=\tiny] {SiLU};
+    \node[basebox, fill=innerblue, below=0.3cm of silu1, minimum width=1.2cm, font=\scriptsize] (ssm) {SSM};
     
-    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.2cm, below right=0.5cm and 0.5cm of split] (proj2) {\scriptsize Projection};
-    \node[circle, fill=mypink, inner sep=1pt] (silu2) at (silu1 -| proj2) {$\sigma$}; \node[right=0cm of silu2, font=\tiny] {SiLU};
+    % Right Branch
+    \node[proj trap, below right=0.5cm and 0.2cm of split] (proj2) {Projection};
+    \node[silu circle] (silu2) at (silu1 -| proj2) {$\sigma$}; \node[right=0cm of silu2, font=\tiny] {SiLU};
     
     % Connections
     \draw[thick] (split) -| (proj1);
@@ -182,37 +231,24 @@
     \draw[thick] (silu2) |- (mult);
     
     % Final Proj
-    \node[trapezium, draw=darkgreen, fill=green!20, trapezium left angle=60, trapezium right angle=60, minimum width=1.2cm, below=0.3cm of mult] (proj_final) {\scriptsize Projection};
+    \node[proj trap, below=0.3cm of mult] (proj_final) {Projection};
     \draw[thick] (mult) -- (proj_final);
     
     % Output Array
-    \coordinate (d_out) at ($(proj_final.south) + (0, -0.5)$);
-    \foreach \x in {-2,-1,0,1,2} \fill[mypink] ($(d_out) + (\x*0.3, 0)$) rectangle ++(0.25, 0.25);
-    \node[above left=0cm and 0.5cm of d_out] {Output};
-    \draw[thick] (proj_final) -- (d_out);
-    
-    % Detail Box (Back)
-    \begin{scope}[on background layer]
-        \node[process, fit={(detail_title) (d_out) (proj1) (proj2)}, inner sep=10pt] (detail_whitebox) {};
-    \end{scope}
+    \coordinate (d_out_start) at ($(proj_final.south) + (-1, -0.5)$);
+    \foreach \x in {0,1,...,7} \fill[mypink] ($(d_out_start) + (\x*0.25, 0)$) rectangle ++(0.2, 0.25);
+    \coordinate (d_out_center) at ($(d_out_start) + (4*0.25, 0)$);
+    \node[above=0.3cm of d_out_start, xshift=1cm, font=\scriptsize] {Output};
+    \draw[thick] (proj_final) -- ($(d_out_center)+(0, 0.25)$);
 
-    % Zoom Lines
-    \draw[dashed, thick, cyan, ->] (mamba_block.east) to[out=0, in=180] ($(d_in)+(-1,0)$);
-    \draw[dashed, thick, mypink, ->] ($(d_out)+(-1,0)$) to[out=180, in=0] (mamba_block.east);
+    % Dashed Zoom Arrows (Corrected Colors and Curve)
+    \draw[dashed, line width=1.5pt, mambacyan!80!blue, ->] (mamba_block.east) to[out=0, in=180] ($(d_in_start)+(-0.2,0.125)$);
+    \draw[dashed, line width=1.5pt, mypink, ->] ($(d_out_start)+(-0.2, 0.125)$) to[out=180, in=0] (lin2.east);
 
-    % Stage 2 Container
-    \node[sectiontitle, above=1cm of input_dim, xshift=2cm] (st2_title) {Stage-2 : Deep Analysis};
-    \begin{scope}[on background layer]
-        \node[container, fill=mygreen!30, draw=darkgreen, fit={(st2_title) (lin1) (sigmoid) (detail_whitebox)}, inner sep=10pt] (st2_container) {};
-    \end{scope}
-
-    % Link from Stage 1 to Stage 2
-    \node[single arrow, fill=black, minimum height=1.5cm] at ($(st1_container.east)!0.5!(st2_container.west)$) {};
-    \node[above=3cm of st1_container.south east, xshift=1cm, font=\bfseries] {cmixed};
-
-    % Final Output
-    \node[single arrow, fill=black, minimum height=1cm, right=0.2cm of sigmoid] (final_arrow) {};
-    \node[right=0.1cm of final_arrow, font=\bfseries\large] {Block or Pass};
+    % Final Output Text and Arrow
+    \node[right=0.3cm of sigmoid, font=\small] (final_txt) {Output [B, 1]};
+    \draw[mainarrow] (final_txt.east) -- ++(1,0);
+    \node[right=1.5cm of final_txt, font=\bfseries\large] {Block or Pass};
 
 \end{tikzpicture}
 \end{document}
