@@ -1,66 +1,58 @@
-# Clustering Analysis with Artificial Bee Colony and K-Means
+3. 程序將計算特徵的熵和斜率，並生成相應的可視化圖表。
 
-This project implements a clustering analysis using a combination of the Artificial Bee Colony (ABC) algorithm and K-Means clustering. The analysis is performed on a dataset of IoT data, and the results are visualized and evaluated using various clustering metrics.
+## 函數說明
 
-## Table of Contents
+### `calculate_feature_entropy(data, feature, window_size)`
 
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Dependencies](#dependencies)
-- [License](#license)
+計算給定特徵在滑動時間窗口內的熵值。
 
-## Introduction
+- **參數**:
+  - `data` (pd.DataFrame): 包含特徵的輸入數據。
+  - `feature` (str): 要計算熵的特徵列名。
+  - `window_size` (int): 滑動時間窗口的大小。
+- **返回**: pd.Series: 對應於時間窗口的熵值序列。
 
-The project aims to enhance the clustering process by optimizing the initial cluster centers using the Artificial Bee Colony algorithm before applying the K-Means clustering. This approach is designed to improve the clustering performance and provide better insights into the data.
+### `calculate_slope(data, feature)`
 
-## Features
+計算特徵隨時間的斜率。
 
-- **Data Preprocessing**: Handles missing values and outliers, and standardizes the data.
-- **Dimensionality Reduction**: Supports PCA and t-SNE for reducing data dimensions.
-- **Clustering**: Combines ABC and K-Means for effective clustering.
-- **Evaluation**: Uses Silhouette Score, Calinski-Harabasz Score, and Davies-Bouldin Score to evaluate clustering performance.
-- **Visualization**: Visualizes the clustering results with matplotlib.
+- **參數**:
+  - `data` (pd.DataFrame): 包含特徵的輸入數據。
+  - `feature` (str): 要計算斜率的特徵列名。
+- **返回**: pd.Series: 計算出的特徵斜率。
 
-## Installation
+### `visualize_entropy_distribution(data, features, label_column, benign_label, attack_label)`
 
-1. Clone the repository:
+可視化正常和攻擊流量的多個特徵熵的分佈。
 
-   ```bash
-   git clone https://github.com/yourusername/clustering-analysis.git
-   cd clustering-analysis
-   ```
+- **參數**:
 
-2. Install the required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+  - `data` (pd.DataFrame): 包含特徵和標籤的數據。
+  - `features` (list): 要可視化的特徵列表。
+  - `label_column` (str): 標籤列名。
+  - `benign_label` (str): 正常流量的標籤。
+  - `attack_label` (str): 攻擊流量的標籤。
 
-## Usage
+- **返回**: None: 顯示熵分佈的圖表。
 
-1. Place your dataset in the `data/raw/` directory. The default dataset is `iot23_combined.csv`.
+### `visualize_entropy_and_slope(data, features)`
 
-2. Run the analysis:
+可視化多個特徵的熵和斜率動態。
 
-   ```bash
-   python src/clustering_analysis.py
-   ```
+- **參數**:
 
-3. The script will preprocess the data, perform dimensionality reduction, cluster the data, evaluate the results, and visualize the clusters.
+  - `data` (pd.DataFrame): 包含熵和斜率特徵的數據。
+  - `features` (list): 要可視化的熵特徵列表。
 
-## Dependencies
+- **返回**: None: 顯示熵和斜率動態的圖表。
 
-- Python 3.x
-- numpy
-- pandas
-- scikit-learn
-- matplotlib
-- seaborn
-- rich
+### `visualize_normality(data, features)`
 
-Ensure all dependencies are installed by using the `requirements.txt` file.
+可視化熵特徵的正態性測試和正態分佈擬合。
 
-## License
+- **參數**:
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+  - `data` (pd.DataFrame): 包含熵特徵的數據。
+  - `features` (list): 要測試和可視化的熵特徵列表。
+
+- **返回**: None: 顯示正態性測試和分佈擬合的圖表。

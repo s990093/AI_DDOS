@@ -1,0 +1,5 @@
+Method,Cluster,Benign,DDoS
+PCA+GMM,Cluster 0,9066,15566
+PCA+GMM,Cluster 1,8,15360
+PSO+Weighted+GMM,Cluster 0,7676,5432
+PSO+Weighted+GMM,Cluster 1,1398,25494
